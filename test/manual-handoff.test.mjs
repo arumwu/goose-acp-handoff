@@ -7,7 +7,7 @@ import {ManualHandoff,HandoffStore,HANDOFF_ID,handoffContext} from '../src/manua
 function fixture(t,{failProvider=false,busy=false,failPrompt=false}={}){
  const dir=mkdtempSync(join(tmpdir(),'handoff-test-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
  const store=new HandoffStore(dir),sent=[],calls=[],agents=[];
- const makeAgent=(emit)=>{const n=agents.length+1;const a={ready:Promise.resolve({}),closed:false,reply:()=>false,write:m=>calls.push(m),close(){this.closed=true},async call(method,params){calls.push({method,params});
+ const makeAgent=(emit)=>{const n=agents.length+1;const a={emit,ready:Promise.resolve({}),closed:false,reply:()=>false,write:m=>calls.push(m),close(){this.closed=true},async call(method,params){calls.push({method,params});
  if(method==='session/new')return {sessionId:'branch-'+n};
  if(method==='session/set_config_option'){if(failProvider&&params.configId==='provider')throw new Error('PROVIDER_AUTH_FAILED');return {configOptions:[{id:'provider',currentValue:params.value},{id:'model',category:'model',currentValue:'m1',options:[{value:'m1',name:'m1'}]}]};}
  if(method==='session/load'){emit({method:'session/update',params:{sessionId:params.sessionId,update:{sessionUpdate:'user_message_chunk',content:{type:'text',text:'private context packet'}}}});return {sessionId:params.sessionId,configOptions:[]};}
@@ -35,3 +35,6 @@ test('long conversation hands off bounded labeled excerpt with complete local ar
 
 test('release original connection only after successful handoff',async t=>{const f=fixture(t),released=[];f.c.releaseSource=sid=>{assert.ok(f.store.records.has(sid));released.push(sid)};f.load('a','A');await f.select('a');assert.deepEqual(released,['a']);});
 test('failed handoff retains original connection',async t=>{const f=fixture(t,{failProvider:true}),released=[];f.c.releaseSource=sid=>released.push(sid);f.load('a','A');await f.select('a');assert.deepEqual(released,[]);});
+
+test('branch auto-title preserves source title and unrelated session metadata',async t=>{const f=fixture(t);f.c.titleFor=()=> 'Original title';f.load('a','A');await f.select('a');f.agents[0].emit({method:'session/update',params:{sessionId:'branch-1',update:{sessionUpdate:'session_info_update',title:'Context packet used as title',updatedAt:'2026-09-27'}}});const m=f.sent.at(-1);assert.equal(m.params.sessionId,'a');assert.equal(m.params.update.title,'Original title');assert.equal(m.params.update.updatedAt,'2026-09-27');assert.equal(f.store.records.get('a').sourceTitle,'Original title');});
+test('unknown source title never forwards branch title',async t=>{const f=fixture(t);f.load('a','A');await f.select('a');f.agents[0].emit({method:'session/update',params:{sessionId:'branch-1',update:{sessionUpdate:'session_info_update',title:'Context packet'}}});assert.equal(Object.hasOwn(f.sent.at(-1).params.update,'title'),false);});
