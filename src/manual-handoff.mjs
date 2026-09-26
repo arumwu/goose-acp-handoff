@@ -163,7 +163,7 @@ export class ManualHandoff{
     if(response.configOptions){this.options.set(sid,response.configOptions);response={...response,configOptions:this.config(sid,response.configOptions)};}
     result(response);
    }finally{this.suppress.delete(sid);this.store.locks.delete(sid);}
-  }catch(e){if(m.id!==undefined)this.send({jsonrpc:'2.0',id:m.id,error:{code:-32000,message:e.message}});}
+  }catch(e){if(m.id!==undefined)this.send({jsonrpc:'2.0',id:m.id,error:{code:-32001,message:e.message}});}
   return true;
  }
 }
