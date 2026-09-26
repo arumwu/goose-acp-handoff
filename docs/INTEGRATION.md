@@ -54,3 +54,9 @@ A Discord or other message source must call this same handoff layer once a branc
 exists. Bypassing it and sending straight to the old session splits the
 conversation. Discord integration is deliberately not included in this public
 module's acceptance claims.
+
+For federated IDs prefixed `external-claude:` or `external-codex:`, the native
+Goose provider/model dialog is supported: selecting the same provider is a no-op;
+selecting another configured target creates a handoff branch. The source adapter
+still needs to translate provider-specific options such as Claude `effort` versus
+Goose `thinking_effort` and report the current model in session metadata.

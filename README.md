@@ -92,7 +92,11 @@ See [upgrade checks and rollback](docs/UPGRADES.md).
   Attachments, tool results, hidden reasoning and arbitrary project files are not.
 - A successful source load is required. Completeness is limited by what the source
   agent replays; this module cannot recover history that the source does not expose.
-- Histories over 200,000 characters are rejected, never silently truncated.
+- Histories over 200,000 characters retain a complete local text archive (0600).
+  The next provider receives a labeled excerpt: the first 12,000 and last 148,000
+  characters, plus the archive path. This is not a complete summary; omitted
+  decisions require reading the archive with the existing tool permissions.
+  Attachments, tool results and hidden reasoning are not exported.
 - The chosen provider receives the transferred text. Review the conversation for
   sensitive data before selecting a different provider; there is no universal
   secret detector or automatic redaction claim.
