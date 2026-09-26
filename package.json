@@ -1,0 +1,23 @@
+{
+  "name": "goose-acp-handoff",
+  "version": "0.1.0",
+  "description": "Experimental manual provider handoff for ACP conversations, with Goose as the target agent.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "goose-acp-handoff": "src/cli.mjs"
+  },
+  "exports": "./src/manual-handoff.mjs",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/manual-handoff.mjs && node --check src/cli.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arumwu/goose-acp-handoff.git"
+  }
+}
