@@ -52,8 +52,8 @@ export class GooseHandoffAgent{
  close(){if(this.closed)return;this.closed=true;for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error('接棒連線中斷；不會自動重送訊息。'));}this.pending.clear();this.child.kill('SIGTERM');}
 }
 export class ManualHandoff{
- constructor({store,send,targets=TARGETS,init=()=>({protocolVersion:1,clientCapabilities:{}}),isBusy=()=>false,cwdFor=()=>null,makeAgent=(emit,init)=>new GooseHandoffAgent(emit,init)}){
-  Object.assign(this,{store,send,targets,init,isBusy,cwdFor,makeAgent});this.observed=new Map();this.pending=new Map();this.agents=new Map();this.loading=new Set();this.suppress=new Set();this.options=new Map();
+ constructor({store,send,targets=TARGETS,init=()=>({protocolVersion:1,clientCapabilities:{}}),isBusy=()=>false,cwdFor=()=>null,releaseSource=()=>true,makeAgent=(emit,init)=>new GooseHandoffAgent(emit,init)}){
+  Object.assign(this,{store,send,targets,init,isBusy,cwdFor,releaseSource,makeAgent});this.observed=new Map();this.pending=new Map();this.agents=new Map();this.loading=new Set();this.suppress=new Set();this.options=new Map();
  }
  config(sid,options=[]){const r=this.store.records.get(sid);return [
   {id:HANDOFF_ID,name:'接棒模型',category:'model',type:'select',description:'手動交接此對話的文字歷史；附件與工具結果不會轉交。',currentValue:r?.provider??'original',options:[...(!r?[{value:'original',name:'保留原代理'}]:[]),...this.targets]},
@@ -125,7 +125,7 @@ export class ManualHandoff{
    const chosen=await a.call('session/set_config_option',{sessionId:created.sessionId,configId:'provider',value:provider});
    if(!chosen.configOptions?.some(c=>c.id==='provider'&&c.currentValue===provider))throw new Error('供應商切換未確認，保留原連線。');
    const r={version:1,sourceId:sid,targetId:created.sessionId,provider,cwd,messages,historyPath,contextPending:context,branchIds:[...(previous?.branchIds??[]),created.sessionId]};
-   this.store.save(r);this.options.set(sid,chosen.configOptions);oldAgent?.close();return {configOptions:this.config(sid,chosen.configOptions)};
+   this.store.save(r);this.options.set(sid,chosen.configOptions);oldAgent?.close();this.releaseSource(sid);return {configOptions:this.config(sid,chosen.configOptions)};
   }catch(e){if(createdId){try{await a.call('session/delete',{sessionId:createdId});}catch{e.message+='（未使用的接棒分支清理未確認）';}}a.close();this.agents.delete(sid);if(oldAgent)this.agents.set(sid,oldAgent);throw e;}
   finally{this.suppress.delete(sid);this.store.locks.delete(sid);}
  }

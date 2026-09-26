@@ -17,6 +17,7 @@ const handoff = new ManualHandoff({
   init: () => originalClientInitialization,
   isBusy: sessionId => originalAgentIsRunning(sessionId),
   cwdFor: sessionId => authoritativeSessionMetadata(sessionId)?.cwd,
+  releaseSource: sessionId => closeOnlyThisOriginalSessionConnection(sessionId),
 });
 
 async function fromClient(message) {
@@ -60,3 +61,8 @@ Goose provider/model dialog is supported: selecting the same provider is a no-op
 selecting another configured target creates a handoff branch. The source adapter
 still needs to translate provider-specific options such as Claude `effort` versus
 Goose `thinking_effort` and report the current model in session metadata.
+
+After a successful handoff, `releaseSource` must synchronously release only the
+selected source connection and must not throw. Use one ACP subprocess per loaded
+source session so release cannot close another conversation. Failed handoffs
+do not invoke this callback; an active source prompt must block handoff.
